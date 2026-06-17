@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Gift, ListChecks, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { DemoButton } from "@/components/demo-button";
 import { Mascot } from "@/components/mascot";
 import { APP_NAME } from "@/lib/config";
 
@@ -53,16 +54,14 @@ export default function Landing() {
             calm app.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/app">
+            <Link href="/setup">
               <Button size="lg">
-                Try the demo <ArrowRight className="size-4" />
+                Create your household <ArrowRight className="size-4" />
               </Button>
             </Link>
-            <Link href="/app/rewards">
-              <Button variant="ghost" size="lg">
-                Peek at the rewards
-              </Button>
-            </Link>
+            <DemoButton variant="ghost" size="lg">
+              Try the demo family
+            </DemoButton>
           </div>
         </div>
 
@@ -109,7 +108,7 @@ export default function Landing() {
               next task instead of dodging it — and the household runs itself a
               little more.
             </p>
-            <Link href="/app" className="mt-6 inline-block">
+            <Link href="/setup" className="mt-6 inline-block">
               <Button>
                 Start playing <ArrowRight className="size-4" />
               </Button>

@@ -1,5 +1,5 @@
+import { AuthGate } from "@/components/auth-gate";
 import { Nav } from "@/components/nav";
-import { StoreProvider } from "@/lib/store";
 
 export default function AppLayout({
   children,
@@ -7,13 +7,13 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <StoreProvider>
+    <AuthGate>
       <div className="relative z-10 flex min-h-dvh flex-col">
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
           {children}
         </main>
       </div>
-    </StoreProvider>
+    </AuthGate>
   );
 }

@@ -6,7 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { POINT_OPTIONS } from "@/lib/config";
-import { useStore } from "@/lib/store";
+import { useMe, useStore } from "@/lib/store";
 import type { Recurrence } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,8 @@ export function NewTaskButton({
   size?: Size;
   className?: string;
 }) {
-  const { members, currentMember, createTask } = useStore();
+  const { members, createTask } = useStore();
+  const me = useMe();
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -39,7 +40,7 @@ export function NewTaskButton({
   const [weekday, setWeekday] = useState(1);
 
   // Only parents can create/assign tasks.
-  if (currentMember.role !== "parent") return null;
+  if (me.role !== "parent") return null;
 
   const resetForm = () => {
     setTitle("");

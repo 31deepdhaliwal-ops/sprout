@@ -10,11 +10,13 @@ import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { leaderboard, levelFor } from "@/lib/scoring";
-import { useStore } from "@/lib/store";
+import { useMe, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
-  const { currentMember, tasks, members, reset } = useStore();
+  const { tasks, members, loadDemo } = useStore();
+  const currentMember = useMe();
+  const isDemo = members.some((m) => m.id === "m_maya");
 
   const myTodo = tasks.filter(
     (t) => t.assigneeId === currentMember.id && t.status === "todo",
@@ -125,11 +127,13 @@ export default function Home() {
         </details>
       )}
 
-      <div className="pt-1">
-        <Button variant="ghost" size="sm" onClick={reset}>
-          <RotateCcw className="size-4" /> Reset demo
-        </Button>
-      </div>
+      {isDemo && (
+        <div className="pt-1">
+          <Button variant="ghost" size="sm" onClick={loadDemo}>
+            <RotateCcw className="size-4" /> Reset demo data
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

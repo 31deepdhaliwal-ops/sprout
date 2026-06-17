@@ -1,4 +1,4 @@
-import type { Member, Reward, Settings, Task } from "./types";
+import type { Household, Member, Reward, Settings, Task } from "./types";
 
 export const APP_NAME = "Sprout";
 
@@ -9,18 +9,36 @@ export const SETTINGS: Settings = {
 
 export const POINT_OPTIONS = [5, 10, 15, 20, 30, 50];
 
+/* A small palette + emoji set offered when the manager adds a new member. */
+export const MEMBER_COLORS = [
+  "oklch(0.60 0.13 25)",
+  "oklch(0.57 0.08 205)",
+  "oklch(0.60 0.13 300)",
+  "oklch(0.62 0.12 145)",
+  "oklch(0.62 0.11 65)",
+  "oklch(0.58 0.14 340)",
+  "oklch(0.58 0.10 250)",
+];
+
+export const MEMBER_EMOJIS = ["🌸", "⭐", "🦊", "🐯", "👵", "🐼", "🦁", "🐸", "🦄", "🐧"];
+
 /*
- * Seed family for local development. In production this comes from Clerk
- * (members) + Convex (tasks/points), but here we simulate "everyone on their
- * own phone" with a profile switcher and zero accounts.
- * lastActiveDate is null so the first real completion starts a clean streak.
+ * Demo family — loaded with one tap from the setup screen so the app has life
+ * before you create your own household. In production members/tasks/points live
+ * in Convex. lastActiveDate is null so the first real completion starts a clean
+ * streak. PINs are intentionally simple here; they're shown as hints on /login.
  */
+export const SEED_HOUSEHOLD: Household = {
+  name: "The Sharma Family",
+  ownerId: "m_maya",
+};
+
 export const SEED_MEMBERS: Member[] = [
-  { id: "m_maya", name: "Maya", role: "parent", color: "oklch(0.60 0.13 25)", initials: "M", emoji: "🌸", points: 60, lifetimePoints: 160, streakDays: 3, lastActiveDate: null, moneyOwed: 0 },
-  { id: "m_raj", name: "Raj", role: "parent", color: "oklch(0.57 0.08 205)", initials: "R", emoji: "⭐", points: 40, lifetimePoints: 95, streakDays: 1, lastActiveDate: null, moneyOwed: 0 },
-  { id: "m_aanya", name: "Aanya", role: "kid", color: "oklch(0.60 0.13 300)", initials: "A", emoji: "🦊", points: 75, lifetimePoints: 240, streakDays: 5, lastActiveDate: null, moneyOwed: 0 },
-  { id: "m_vir", name: "Vir", role: "kid", color: "oklch(0.62 0.12 145)", initials: "V", emoji: "🐯", points: 25, lifetimePoints: 80, streakDays: 2, lastActiveDate: null, moneyOwed: 0 },
-  { id: "m_nani", name: "Nani", role: "helper", color: "oklch(0.62 0.11 65)", initials: "N", emoji: "👵", points: 20, lifetimePoints: 30, streakDays: 0, lastActiveDate: null, moneyOwed: 0 },
+  { id: "m_maya", name: "Maya", role: "parent", color: "oklch(0.60 0.13 25)", initials: "M", emoji: "🌸", username: "maya", pin: "1234", points: 60, lifetimePoints: 160, streakDays: 3, lastActiveDate: null, moneyOwed: 0 },
+  { id: "m_raj", name: "Raj", role: "parent", color: "oklch(0.57 0.08 205)", initials: "R", emoji: "⭐", username: "raj", pin: "1111", points: 40, lifetimePoints: 95, streakDays: 1, lastActiveDate: null, moneyOwed: 0 },
+  { id: "m_aanya", name: "Aanya", role: "kid", color: "oklch(0.60 0.13 300)", initials: "A", emoji: "🦊", username: "aanya", pin: "2222", points: 75, lifetimePoints: 240, streakDays: 5, lastActiveDate: null, moneyOwed: 0 },
+  { id: "m_vir", name: "Vir", role: "kid", color: "oklch(0.62 0.12 145)", initials: "V", emoji: "🐯", username: "vir", pin: "3333", points: 25, lifetimePoints: 80, streakDays: 2, lastActiveDate: null, moneyOwed: 0 },
+  { id: "m_nani", name: "Nani", role: "helper", color: "oklch(0.62 0.11 65)", initials: "N", emoji: "👵", username: "nani", pin: "4444", points: 20, lifetimePoints: 30, streakDays: 0, lastActiveDate: null, moneyOwed: 0 },
 ];
 
 export const SEED_TASKS: Task[] = [

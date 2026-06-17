@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { Mascot } from "@/components/mascot";
 import { NewTaskButton } from "@/components/new-task";
 import { APP_NAME } from "@/lib/config";
-import { useStore } from "@/lib/store";
+import { useMe, useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -17,9 +17,17 @@ const LINKS = [
   { href: "/app/rewards", label: "Rewards" },
 ];
 
-function ProfileSwitcher() {
-  const { members, currentMember, switchProfile } = useStore();
+function UserMenu() {
+  const { household, logout } = useStore();
+  const me = useMe();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  const signOut = () => {
+    setOpen(false);
+    logout();
+    router.push("/login");
+  };
 
   return (
     <div className="relative">
@@ -27,8 +35,8 @@ function ProfileSwitcher() {
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-2.5 text-sm shadow-soft"
       >
-        <Avatar member={currentMember} size="sm" />
-        <span className="font-medium">{currentMember.name}</span>
+        <Avatar member={me} size="sm" />
+        <span className="font-medium">{me.name}</span>
         <ChevronDown className="size-4 text-muted-foreground" />
       </button>
 
@@ -40,31 +48,22 @@ function ProfileSwitcher() {
             tabIndex={-1}
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 z-40 mt-2 w-56 rounded-2xl border border-border bg-card p-1.5 shadow-soft-lg">
-            <p className="px-2 py-1 text-xs text-muted-foreground">
-              Viewing as (simulated phone)
-            </p>
-            {members.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => {
-                  switchProfile(m.id);
-                  setOpen(false);
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-sm transition",
-                  m.id === currentMember.id
-                    ? "bg-primary/12 text-primary"
-                    : "hover:bg-muted",
-                )}
-              >
-                <Avatar member={m} size="sm" />
-                <span className="font-medium">{m.name}</span>
-                <span className="ml-auto text-xs capitalize text-muted-foreground">
-                  {m.role}
-                </span>
-              </button>
-            ))}
+          <div className="absolute right-0 z-40 mt-2 w-60 rounded-2xl border border-border bg-card p-1.5 shadow-soft-lg">
+            <div className="flex items-center gap-2 px-2 py-2">
+              <Avatar member={me} size="md" showEmoji />
+              <div className="min-w-0">
+                <p className="truncate font-medium">{me.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {household?.name}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={signOut}
+              className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium transition hover:bg-muted"
+            >
+              <LogOut className="size-4" /> Log out / switch user
+            </button>
           </div>
         </>
       )}
@@ -84,7 +83,7 @@ export function Nav() {
         </Link>
         <div className="flex items-center gap-2">
           <NewTaskButton size="sm" label="Task" />
-          <ProfileSwitcher />
+          <UserMenu />
         </div>
       </div>
       <nav className="mx-auto flex max-w-5xl gap-1 px-4 py-2">

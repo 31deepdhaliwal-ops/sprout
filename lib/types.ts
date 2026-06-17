@@ -9,11 +9,20 @@ export interface Member {
   color: string; // an OKLCH string used directly as the avatar background
   initials: string;
   emoji: string;
+  username: string; // login handle, unique within the household
+  pin: string; // login PIN (kept in plain text locally; hashed server-side once on Convex)
   points: number; // spendable balance
   lifetimePoints: number; // for level + leaderboard (never spent)
   streakDays: number;
   lastActiveDate: string | null; // YYYY-MM-DD of last completion
   moneyOwed: number; // cashed-out points awaiting payout, in currency units
+}
+
+/* The account everything hangs off. The manager (mom) creates it, then adds
+ * everyone else as members under it. */
+export interface Household {
+  name: string;
+  ownerId: string; // the manager who created the household (a Member id)
 }
 
 export type Recurrence =

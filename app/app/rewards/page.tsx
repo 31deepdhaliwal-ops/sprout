@@ -6,14 +6,13 @@ import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { memberById } from "@/lib/scoring";
-import { useStore } from "@/lib/store";
+import { useMe, useStore } from "@/lib/store";
 
 export default function Rewards() {
   const {
     rewards,
     redemptions,
     members,
-    currentMember,
     settings,
     redeemReward,
     cashOut,
@@ -22,6 +21,7 @@ export default function Rewards() {
     markFulfilled,
     markPaid,
   } = useStore();
+  const currentMember = useMe();
 
   const isParent = currentMember.role === "parent";
   const money = Math.floor(currentMember.points / settings.pointsPerCurrencyUnit);

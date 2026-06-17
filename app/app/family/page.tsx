@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
+import { ManageMembers } from "@/components/manage-members";
 import { TaskItem } from "@/components/task-item";
 import { Card } from "@/components/ui/card";
 import { leaderboard, levelFor } from "@/lib/scoring";
@@ -9,7 +10,7 @@ import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 export default function Family() {
-  const { members, tasks } = useStore();
+  const { members, tasks, isOwner } = useStore();
   const [range, setRange] = useState<"week" | "all">("week");
 
   const rows = leaderboard(members, tasks);
@@ -82,6 +83,9 @@ export default function Family() {
           })}
         </ul>
       </Card>
+
+      {/* manager: add & manage who's in the household */}
+      {isOwner && <ManageMembers />}
 
       {/* per-member boards */}
       <div className="grid gap-4 md:grid-cols-2">
