@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
 import { Flame, RotateCcw, Trophy } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { CountUp } from "@/components/count-up";
 import { Mascot } from "@/components/mascot";
 import { NewTaskButton } from "@/components/new-task";
+import { Reveal } from "@/components/reveal";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +18,7 @@ import { cn } from "@/lib/utils";
 export default function Home() {
   const { tasks, members, loadDemo } = useStore();
   const currentMember = useMe();
+  const reduce = useReducedMotion();
   const isDemo = members.some((m) => m.id === "m_maya");
 
   const myTodo = tasks.filter(
@@ -31,6 +34,7 @@ export default function Home() {
   return (
     <div className="space-y-6">
       {/* header */}
+      <Reveal>
       <Card className="p-6">
         <div className="flex items-center gap-4">
           <Avatar member={currentMember} size="xl" showEmoji />
@@ -53,7 +57,18 @@ export default function Home() {
             <p className="text-xs text-muted-foreground">Streak</p>
             <p className="mt-1 flex items-center gap-1 font-display text-2xl">
               <CountUp value={currentMember.streakDays} />
-              <Flame className="size-5 text-accent" />
+              <motion.span
+                className="inline-flex"
+                style={{ transformOrigin: "bottom center" }}
+                animate={
+                  reduce || currentMember.streakDays === 0
+                    ? {}
+                    : { scale: [1, 1.18, 0.94, 1.12, 1], rotate: [0, -7, 6, -3, 0] }
+                }
+                transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Flame className="size-5 text-accent" />
+              </motion.span>
             </p>
           </div>
           <div className="rounded-2xl bg-muted/60 p-3">
@@ -70,8 +85,10 @@ export default function Home() {
           </div>
         </div>
       </Card>
+      </Reveal>
 
       {/* my tasks */}
+      <Reveal delay={0.06}>
       <section>
         <div className="mb-1 flex items-center justify-between px-2">
           <h2 className="font-display text-xl">My tasks</h2>
@@ -87,9 +104,11 @@ export default function Home() {
           )}
         </Card>
       </section>
+      </Reveal>
 
       {/* parent: leaderboard peek */}
       {isParent && (
+        <Reveal delay={0.12}>
         <Card className="p-5">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 font-display text-lg">
@@ -112,6 +131,7 @@ export default function Home() {
             ))}
           </ul>
         </Card>
+        </Reveal>
       )}
 
       {myDone.length > 0 && (

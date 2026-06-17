@@ -103,11 +103,26 @@ export function Mascot({
             <path d="M64 62 L74 62" stroke={ink} strokeWidth="2.6" strokeLinecap="round" />
             <path d="M81 56 q3 5 0 8 q-3 -3 0 -8 Z" fill="#7fb8e6" />
           </>
-        ) : (
+        ) : reduce ? (
           <>
             <circle cx="51" cy="61" r="3.2" fill={ink} />
             <circle cx="69" cy="61" r="3.2" fill={ink} />
           </>
+        ) : (
+          <motion.g
+            style={{ transformBox: "fill-box", transformOrigin: "center" }}
+            animate={{ scaleY: [1, 1, 0.12, 1] }}
+            transition={{
+              duration: 0.3,
+              repeat: Infinity,
+              repeatDelay: 3.6,
+              times: [0, 0.8, 0.9, 1],
+              ease: "easeInOut",
+            }}
+          >
+            <circle cx="51" cy="61" r="3.2" fill={ink} />
+            <circle cx="69" cy="61" r="3.2" fill={ink} />
+          </motion.g>
         )}
 
         {/* mouth */}

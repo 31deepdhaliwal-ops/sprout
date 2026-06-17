@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { Mascot } from "@/components/mascot";
@@ -18,6 +19,7 @@ export default function Login() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const pinRef = useRef<HTMLInputElement>(null);
+  const reduce = useReducedMotion();
 
   // No household → set one up. Already signed in → into the app.
   useEffect(() => {
@@ -67,24 +69,32 @@ export default function Login() {
 
         {!selected ? (
           <div className="grid grid-cols-2 gap-3">
-            {members.map((m) => (
-              <Card
+            {members.map((m, i) => (
+              <motion.div
                 key={m.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => pick(m.id)}
-                onKeyDown={(e) => e.key === "Enter" && pick(m.id)}
-                className="flex cursor-pointer flex-col items-center gap-2 p-5 transition hover:bg-muted/60"
+                initial={reduce ? false : { opacity: 0, y: 10 }}
+                animate={reduce ? {} : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+                whileHover={reduce ? undefined : { scale: 1.04, y: -2 }}
+                whileTap={reduce ? undefined : { scale: 0.97 }}
               >
-                <Avatar member={m} size="xl" showEmoji />
-                <div className="text-center">
-                  <p className="font-medium">{m.name}</p>
-                  <p className="text-xs capitalize text-muted-foreground">{m.role}</p>
-                  {isDemo && (
-                    <p className="mt-1 text-xs tabular-nums text-primary">PIN {m.pin}</p>
-                  )}
-                </div>
-              </Card>
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => pick(m.id)}
+                  onKeyDown={(e) => e.key === "Enter" && pick(m.id)}
+                  className="flex cursor-pointer flex-col items-center gap-2 p-5 transition hover:bg-muted/60"
+                >
+                  <Avatar member={m} size="xl" showEmoji />
+                  <div className="text-center">
+                    <p className="font-medium">{m.name}</p>
+                    <p className="text-xs capitalize text-muted-foreground">{m.role}</p>
+                    {isDemo && (
+                      <p className="mt-1 text-xs tabular-nums text-primary">PIN {m.pin}</p>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
             ))}
           </div>
         ) : (

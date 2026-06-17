@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CalendarDays, Repeat } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Avatar } from "@/components/avatar";
+import { Confetti } from "@/components/confetti";
 import { PointsBadge } from "@/components/ui/badge";
 import { memberById } from "@/lib/scoring";
 import { useStore } from "@/lib/store";
@@ -56,6 +57,7 @@ export function TaskItem({
       className="group flex items-start gap-3 rounded-2xl px-3 py-3 transition-colors hover:bg-muted/60"
     >
       <div className="relative">
+        {burst && <Confetti />}
         <button
           type="button"
           onClick={onToggle}
