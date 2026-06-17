@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Mascot } from "@/components/mascot";
@@ -149,6 +150,14 @@ export default function Setup() {
           >
             <Sparkles className="size-4" /> Just exploring? Load a demo family
           </button>
+          <p className="mt-3">
+            <Link
+              href="/"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              ← Back to login
+            </Link>
+          </p>
         </div>
       </div>
     </div>

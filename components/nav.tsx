@@ -26,7 +26,7 @@ function UserMenu() {
   const signOut = () => {
     setOpen(false);
     logout();
-    router.push("/login");
+    router.push("/");
   };
 
   return (

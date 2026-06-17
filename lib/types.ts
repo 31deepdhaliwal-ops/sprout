@@ -16,6 +16,7 @@ export interface Member {
   streakDays: number;
   lastActiveDate: string | null; // YYYY-MM-DD of last completion
   moneyOwed: number; // cashed-out points awaiting payout, in currency units
+  badges: string[]; // ids of achievements earned (see lib/badges.ts)
 }
 
 /* The account everything hangs off. The manager (mom) creates it, then adds
@@ -37,8 +38,11 @@ export interface Task {
   assigneeId: string;
   createdById: string;
   dueDate?: string | null; // ISO date
-  status: "todo" | "done";
-  completedAt?: string | null; // ISO datetime
+  // "pending" = the assignee says it's done and is waiting for a parent to approve.
+  status: "todo" | "pending" | "done";
+  requiresApproval: boolean; // does a parent need to sign off before points are awarded?
+  submittedAt?: string | null; // ISO datetime the assignee marked it done (awaiting approval)
+  completedAt?: string | null; // ISO datetime points were awarded
   recurrence: Recurrence | null;
   createdAt: string;
 }

@@ -17,7 +17,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     if (!household) router.replace("/setup");
-    else if (!currentMember) router.replace("/login");
+    else if (!currentMember) router.replace("/");
   }, [hydrated, household, currentMember, router]);
 
   if (!hydrated || !household || !currentMember) {
