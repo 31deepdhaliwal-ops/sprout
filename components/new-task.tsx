@@ -38,9 +38,15 @@ export function NewTaskButton({
   const [due, setDue] = useState("");
   const [repeat, setRepeat] = useState<Repeat>("none");
   const [weekday, setWeekday] = useState(1);
+  const [requireApproval, setRequireApproval] = useState(true);
 
   // Only parents can create/assign tasks.
   if (me.role !== "parent") return null;
+
+  // A parent doing their own task signs off automatically, so the toggle only
+  // matters when the task is going to someone else.
+  const assignee = members.find((m) => m.id === assigneeId);
+  const approvalRelevant = assignee?.role !== "parent";
 
   const resetForm = () => {
     setTitle("");
@@ -50,6 +56,7 @@ export function NewTaskButton({
     setDue("");
     setRepeat("none");
     setWeekday(1);
+    setRequireApproval(true);
   };
 
   const submit = () => {
@@ -67,6 +74,7 @@ export function NewTaskButton({
       assigneeId,
       dueDate: due || null,
       recurrence,
+      requiresApproval: requireApproval,
     });
     resetForm();
     setOpen(false);
@@ -182,6 +190,23 @@ export function NewTaskButton({
               </label>
             )}
           </div>
+
+          {approvalRelevant && (
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-muted/60 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={requireApproval}
+                onChange={(e) => setRequireApproval(e.target.checked)}
+                className="mt-0.5 size-4 accent-[var(--primary)]"
+              />
+              <span>
+                <span className="font-medium">Needs my approval</span>
+                <span className="mt-0.5 block text-muted-foreground">
+                  Points are held until a parent confirms it&apos;s really done.
+                </span>
+              </span>
+            </label>
+          )}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>

@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { CalendarDays, Repeat } from "lucide-react";
+import { CalendarDays, Check, Clock, Repeat, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/confetti";
-import { PointsBadge } from "@/components/ui/badge";
-import { memberById } from "@/lib/scoring";
-import { useStore } from "@/lib/store";
+import { Badge, PointsBadge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { dueBucket, memberById } from "@/lib/scoring";
+import { useMe, useStore } from "@/lib/store";
 import type { Recurrence, Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -34,22 +35,49 @@ export function TaskItem({
   task: Task;
   showAssignee?: boolean;
 }) {
-  const { toggleTask, members } = useStore();
+  const { completeTask, approveTask, rejectTask, members } = useStore();
+  const me = useMe();
   const reduce = useReducedMotion();
   const [burst, setBurst] = useState(false);
 
   const assignee = memberById(members, task.assigneeId);
   const recur = recurrenceLabel(task.recurrence);
-  const done = task.status === "done";
+  const status = task.status;
+  const done = status === "done";
+  const pending = status === "pending";
 
-  const onToggle = () => {
-    const completing = task.status === "todo";
-    toggleTask(task.id);
-    if (completing) {
-      setBurst(true);
-      window.setTimeout(() => setBurst(false), 1000);
+  const isParent = me.role === "parent";
+  const isAssignee = me.id === task.assigneeId;
+  const needsApproval = task.requiresApproval && assignee?.role !== "parent";
+  const overdue = !done && !!task.dueDate && dueBucket(task.dueDate) === "overdue";
+
+  const fireBurst = () => {
+    setBurst(true);
+    window.setTimeout(() => setBurst(false), 1000);
+  };
+
+  const onCircle = () => {
+    if (status === "todo") {
+      completeTask(task.id);
+      if (!needsApproval) fireBurst(); // points land immediately
+      return;
+    }
+    if (done) {
+      completeTask(task.id); // undo
+      return;
+    }
+    if (pending && isAssignee) {
+      completeTask(task.id); // cancel my own submission
     }
   };
+
+  const onApprove = () => {
+    approveTask(task.id);
+    fireBurst();
+  };
+
+  // The circle is only interactive when this person can act on it.
+  const circleActive = status === "todo" || done || (pending && isAssignee);
 
   return (
     <motion.div
@@ -60,43 +88,52 @@ export function TaskItem({
         {burst && <Confetti />}
         <button
           type="button"
-          onClick={onToggle}
+          onClick={onCircle}
+          disabled={!circleActive}
           aria-pressed={done}
-          aria-label={done ? "Mark as not done" : "Mark as done"}
+          aria-label={
+            done
+              ? "Mark as not done"
+              : pending
+                ? "Waiting for approval"
+                : "Mark as done"
+          }
           className={cn(
             "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border-2 transition-colors",
-            done
-              ? "border-positive bg-positive"
-              : "border-border hover:border-primary",
+            done && "border-positive bg-positive text-white",
+            pending && "border-apricot bg-apricot/40 text-foreground",
+            status === "todo" && "border-border hover:border-primary",
+            !circleActive && "cursor-default",
           )}
         >
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {done && (
-              <motion.svg
+              <motion.span
+                key="check"
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
                 transition={
-                  reduce
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 520, damping: 16 }
+                  reduce ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 16 }
                 }
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
-                <path d="M5 13l4 4L19 7" />
-              </motion.svg>
+                <Check className="size-4" strokeWidth={3.5} />
+              </motion.span>
+            )}
+            {pending && (
+              <motion.span
+                key="clock"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+              >
+                <Clock className="size-4" strokeWidth={2.5} />
+              </motion.span>
             )}
           </AnimatePresence>
         </button>
 
-        {/* points fly up on completion */}
+        {/* points fly up when they're actually awarded */}
         <AnimatePresence>
           {burst && !reduce && (
             <motion.span
@@ -126,6 +163,11 @@ export function TaskItem({
         )}
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <PointsBadge points={task.points} />
+          {pending && (
+            <Badge tone="apricot" className="gap-1">
+              <Clock className="size-3" /> Waiting for approval
+            </Badge>
+          )}
           {recur && (
             <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-0.5 text-xs text-muted-foreground">
               <Repeat className="size-3" />
@@ -133,12 +175,32 @@ export function TaskItem({
             </span>
           )}
           {task.dueDate && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-foreground/5 px-2.5 py-0.5 text-xs text-muted-foreground">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs",
+                overdue
+                  ? "bg-destructive/12 font-medium text-destructive"
+                  : "bg-foreground/5 text-muted-foreground",
+              )}
+            >
               <CalendarDays className="size-3" />
+              {overdue ? "Overdue · " : ""}
               {prettyDate(task.dueDate)}
             </span>
           )}
         </div>
+
+        {/* parent sign-off controls */}
+        {pending && isParent && (
+          <div className="mt-2.5 flex items-center gap-2">
+            <Button size="sm" onClick={onApprove}>
+              <Check className="size-4" /> Approve
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => rejectTask(task.id)}>
+              <X className="size-4" /> Send back
+            </Button>
+          </div>
+        )}
       </div>
 
       {showAssignee && (

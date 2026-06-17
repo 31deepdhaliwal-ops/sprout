@@ -10,6 +10,7 @@ import {
   SETTINGS,
 } from "./config";
 import { nextStreak, shouldResetRecurring, todayISO } from "./scoring";
+import { badgeStats, earnedBadgeIds } from "./badges";
 import type {
   Household,
   Member,
@@ -50,6 +51,7 @@ export interface NewTaskInput {
   assigneeId: string;
   dueDate?: string | null;
   recurrence: Recurrence | null;
+  requiresApproval: boolean;
 }
 
 export interface NewMemberInput {
@@ -81,6 +83,8 @@ interface StoreValue {
   currentMember: Member | null;
   isOwner: boolean;
   hydrated: boolean;
+  recentBadgeId: string | null; // a badge the signed-in member just unlocked
+  dismissBadge: () => void;
   // auth + household
   createHousehold: (input: CreateHouseholdInput) => void;
   loadDemo: () => void;
@@ -93,7 +97,9 @@ interface StoreValue {
   removeMember: (id: string) => void;
   // tasks + rewards
   createTask: (input: NewTaskInput) => void;
-  toggleTask: (id: string) => void;
+  completeTask: (id: string) => void; // assignee checks it off (-> pending or done)
+  approveTask: (id: string) => void; // parent signs off a pending task (-> done)
+  rejectTask: (id: string) => void; // parent sends a pending task back (-> todo)
   redeemReward: (rewardId: string, memberId: string) => boolean;
   cashOut: (memberId: string) => void;
   addReward: (r: { name: string; emoji: string; cost: number }) => void;
@@ -110,6 +116,25 @@ function initials(name: string): string {
   return (letters || "?").slice(0, 2).toUpperCase();
 }
 
+/** Add a member's freshly-earned badge ids to their list. Returns the updated
+ * member array plus the ids that are new this time (for the celebration toast). */
+function syncBadges(
+  members: Member[],
+  tasks: Task[],
+  memberId: string,
+): { members: Member[]; newly: string[] } {
+  const i = members.findIndex((m) => m.id === memberId);
+  if (i < 0) return { members, newly: [] };
+  const member = members[i];
+  const earned = earnedBadgeIds(badgeStats(member, members, tasks));
+  const have = new Set(member.badges ?? []);
+  const newly = earned.filter((id) => !have.has(id));
+  if (newly.length === 0) return { members, newly: [] };
+  const next = members.slice();
+  next[i] = { ...member, badges: [...(member.badges ?? []), ...newly] };
+  return { members: next, newly };
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Fresh state = no household yet → the app sends you to /setup.
   const [household, setHousehold] = useState<Household | null>(null);
@@ -119,6 +144,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [authedMemberId, setAuthedMemberId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [recentBadgeId, setRecentBadgeId] = useState<string | null>(null);
 
   // Load persisted state after mount (keeps first server/client render identical).
   useEffect(() => {
@@ -127,8 +153,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (raw) {
         const p = JSON.parse(raw) as Partial<Persisted>;
         if (p.household) setHousehold(p.household);
-        if (p.members) setMembers(p.members);
-        if (p.tasks) setTasks(p.tasks);
+        // Backfill fields added in later versions so old saves still load.
+        if (p.members)
+          setMembers(p.members.map((m) => ({ ...m, badges: m.badges ?? [] })));
+        if (p.tasks)
+          setTasks(
+            p.tasks.map((t) => ({
+              ...t,
+              status: t.status ?? "todo",
+              requiresApproval: t.requiresApproval ?? false,
+            })),
+          );
         if (p.rewards) setRewards(p.rewards);
         if (p.redemptions) setRedemptions(p.redemptions);
         if (p.authedMemberId) setAuthedMemberId(p.authedMemberId);
@@ -191,6 +226,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       streakDays: 0,
       lastActiveDate: null,
       moneyOwed: 0,
+      badges: [],
     };
     setHousehold({ name: input.householdName.trim() || "Our Family", ownerId: managerId });
     setMembers([manager]);
@@ -251,6 +287,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       streakDays: 0,
       lastActiveDate: null,
       moneyOwed: 0,
+      badges: [],
     };
     setMembers((prev) => [...prev, member]);
     return { ok: true };
@@ -292,6 +329,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       createdById: authedMemberId ?? input.assigneeId,
       dueDate: input.dueDate ?? null,
       status: "todo",
+      requiresApproval: input.requiresApproval,
+      submittedAt: null,
       completedAt: null,
       recurrence: input.recurrence,
       createdAt: new Date().toISOString(),
@@ -299,34 +338,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTasks((prev) => [task, ...prev]);
   };
 
-  const toggleTask = (id: string) => {
+  /* Award a task's points to its assignee, mark it done, and unlock any badges
+   * the win just earned. Used by both direct completion and parent approval. */
+  const finalizeDone = (task: Task) => {
+    const completedAt = new Date().toISOString();
+    const nextTasks = tasks.map((t) =>
+      t.id === task.id
+        ? { ...t, status: "done" as const, submittedAt: null, completedAt }
+        : t,
+    );
+    const awarded = members.map((m) =>
+      m.id === task.assigneeId
+        ? {
+            ...m,
+            points: m.points + task.points,
+            lifetimePoints: m.lifetimePoints + task.points,
+            streakDays: nextStreak(m),
+            lastActiveDate: todayISO(),
+          }
+        : m,
+    );
+    const { members: synced, newly } = syncBadges(
+      awarded,
+      nextTasks,
+      task.assigneeId,
+    );
+    setTasks(nextTasks);
+    setMembers(synced);
+    if (newly.length > 0 && task.assigneeId === authedMemberId) {
+      setRecentBadgeId(newly[0]);
+    }
+  };
+
+  // The assignee checks a task off. If it needs a parent's sign-off (and the
+  // assignee isn't a parent) it parks in "pending"; otherwise points land now.
+  const completeTask = (id: string) => {
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
 
-    if (task.status === "todo") {
-      const completedAt = new Date().toISOString();
+    if (task.status === "done") {
+      // Undo a completed task: take the points back, return it to the list.
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === id ? { ...t, status: "done" as const, completedAt } : t,
-        ),
-      );
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === task.assigneeId
-            ? {
-                ...m,
-                points: m.points + task.points,
-                lifetimePoints: m.lifetimePoints + task.points,
-                streakDays: nextStreak(m),
-                lastActiveDate: todayISO(),
-              }
-            : m,
-        ),
-      );
-    } else {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === id ? { ...t, status: "todo" as const, completedAt: null } : t,
+          t.id === id
+            ? { ...t, status: "todo" as const, completedAt: null }
+            : t,
         ),
       );
       setMembers((prev) =>
@@ -340,7 +396,53 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             : m,
         ),
       );
+      return;
     }
+
+    if (task.status === "pending") {
+      // Assignee changes their mind before a parent approves — back to todo.
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, status: "todo" as const, submittedAt: null } : t,
+        ),
+      );
+      return;
+    }
+
+    // status === "todo"
+    const assignee = members.find((m) => m.id === task.assigneeId);
+    const needsApproval = task.requiresApproval && assignee?.role !== "parent";
+    if (needsApproval) {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                status: "pending" as const,
+                submittedAt: new Date().toISOString(),
+              }
+            : t,
+        ),
+      );
+    } else {
+      finalizeDone(task);
+    }
+  };
+
+  const approveTask = (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    if (!task || task.status !== "pending") return;
+    finalizeDone(task);
+  };
+
+  const rejectTask = (id: string) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id && t.status === "pending"
+          ? { ...t, status: "todo" as const, submittedAt: null }
+          : t,
+      ),
+    );
   };
 
   /* ---------- rewards ---------- */
@@ -405,6 +507,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       prev.map((m) => (m.id === memberId ? { ...m, moneyOwed: 0 } : m)),
     );
 
+  const dismissBadge = () => setRecentBadgeId(null);
+
   const currentMember = members.find((m) => m.id === authedMemberId) ?? null;
   const isOwner = !!currentMember && !!household && currentMember.id === household.ownerId;
 
@@ -421,6 +525,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         currentMember,
         isOwner,
         hydrated,
+        recentBadgeId,
+        dismissBadge,
         createHousehold,
         loadDemo,
         login,
@@ -430,7 +536,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         updateMember,
         removeMember,
         createTask,
-        toggleTask,
+        completeTask,
+        approveTask,
+        rejectTask,
         redeemReward,
         cashOut,
         addReward,

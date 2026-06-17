@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
-import { Flame, RotateCcw, Trophy } from "lucide-react";
+import { Flame, Inbox, RotateCcw, Trophy } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { BadgeWall, EarnedBadges } from "@/components/badges";
 import { CountUp } from "@/components/count-up";
 import { Mascot } from "@/components/mascot";
 import { NewTaskButton } from "@/components/new-task";
+import { Reminders } from "@/components/reminders";
 import { Reveal } from "@/components/reveal";
 import { TaskItem } from "@/components/task-item";
 import { Button } from "@/components/ui/button";
@@ -21,8 +23,8 @@ export default function Home() {
   const reduce = useReducedMotion();
   const isDemo = members.some((m) => m.id === "m_maya");
 
-  const myTodo = tasks.filter(
-    (t) => t.assigneeId === currentMember.id && t.status === "todo",
+  const myActive = tasks.filter(
+    (t) => t.assigneeId === currentMember.id && t.status !== "done",
   );
   const myDone = tasks.filter(
     (t) => t.assigneeId === currentMember.id && t.status === "done",
@@ -30,6 +32,9 @@ export default function Home() {
   const lvl = levelFor(currentMember.lifetimePoints);
   const isParent = currentMember.role === "parent";
   const board = leaderboard(members, tasks);
+  const toApprove = isParent
+    ? tasks.filter((t) => t.status === "pending")
+    : [];
 
   return (
     <div className="space-y-6">
@@ -43,12 +48,12 @@ export default function Home() {
               Hi {currentMember.name} {currentMember.emoji}
             </p>
             <h1 className="font-display text-3xl leading-tight">
-              {myTodo.length > 0
-                ? `${myTodo.length} ${myTodo.length === 1 ? "task" : "tasks"} to go`
+              {myActive.length > 0
+                ? `${myActive.length} ${myActive.length === 1 ? "task" : "tasks"} to go`
                 : "All done — nice work!"}
             </h1>
           </div>
-          <Mascot state={myTodo.length === 0 ? "celebrate" : "balanced"} size={64} />
+          <Mascot state={myActive.length === 0 ? "celebrate" : "balanced"} size={64} />
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-3">
@@ -84,8 +89,34 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {currentMember.badges.length > 0 && (
+          <EarnedBadges member={currentMember} className="mt-4" />
+        )}
       </Card>
       </Reveal>
+
+      {/* nudges */}
+      <Reminders />
+
+      {/* parent: tasks waiting to be approved */}
+      {isParent && toApprove.length > 0 && (
+        <Reveal>
+        <section id="to-approve" className="scroll-mt-24">
+          <h2 className="mb-1 flex items-center gap-2 px-2 font-display text-xl">
+            <Inbox className="size-5 text-primary" /> To approve
+            <span className="text-sm font-normal text-muted-foreground">
+              ({toApprove.length})
+            </span>
+          </h2>
+          <Card className="divide-y divide-border/60 p-2">
+            {toApprove.map((t) => (
+              <TaskItem key={t.id} task={t} showAssignee />
+            ))}
+          </Card>
+        </section>
+        </Reveal>
+      )}
 
       {/* my tasks */}
       <Reveal delay={0.06}>
@@ -95,12 +126,12 @@ export default function Home() {
           {isParent && <NewTaskButton size="sm" variant="secondary" />}
         </div>
         <Card className="divide-y divide-border/60 p-2">
-          {myTodo.length === 0 ? (
+          {myActive.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
               Nothing to do right now — go spend your points! 🌿
             </p>
           ) : (
-            myTodo.map((t) => <TaskItem key={t.id} task={t} />)
+            myActive.map((t) => <TaskItem key={t.id} task={t} />)
           )}
         </Card>
       </section>
@@ -133,6 +164,13 @@ export default function Home() {
         </Card>
         </Reveal>
       )}
+
+      {/* badges */}
+      <Reveal delay={0.16}>
+        <Card className="p-5">
+          <BadgeWall member={currentMember} />
+        </Card>
+      </Reveal>
 
       {myDone.length > 0 && (
         <details className="rounded-3xl border border-border bg-card/60 px-5 py-4">

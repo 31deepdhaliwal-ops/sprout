@@ -1,4 +1,5 @@
 import { AuthGate } from "@/components/auth-gate";
+import { BadgeToast } from "@/components/badges";
 import { Nav } from "@/components/nav";
 
 export default function AppLayout({
@@ -13,6 +14,7 @@ export default function AppLayout({
         <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-8">
           {children}
         </main>
+        <BadgeToast />
       </div>
     </AuthGate>
   );

@@ -29,6 +29,25 @@ export function yesterdayISO(now: Date = new Date()): string {
   return toISODate(d);
 }
 
+/** Whole days from today until an ISO date (negative = in the past). */
+export function daysUntil(dueISO: string, now: Date = new Date()): number {
+  const due = new Date(`${dueISO}T00:00:00`).getTime();
+  const today = new Date(`${toISODate(now)}T00:00:00`).getTime();
+  return Math.round((due - today) / 86_400_000);
+}
+
+export type DueBucket = "overdue" | "today" | "tomorrow" | "soon" | "later";
+
+/** Group a due date into a human bucket for the schedule view + reminders. */
+export function dueBucket(dueISO: string, now: Date = new Date()): DueBucket {
+  const d = daysUntil(dueISO, now);
+  if (d < 0) return "overdue";
+  if (d === 0) return "today";
+  if (d === 1) return "tomorrow";
+  if (d <= 7) return "soon";
+  return "later";
+}
+
 /** Monday-based start of week. */
 export function startOfWeek(d: Date): Date {
   const x = new Date(d);
@@ -70,6 +89,12 @@ export function weeklyPoints(
         new Date(t.completedAt).getTime() >= weekStart,
     )
     .reduce((s, t) => s + t.points, 0);
+}
+
+/** How many tasks this member has actually completed (points awarded). */
+export function completedCount(tasks: Task[], memberId: string): number {
+  return tasks.filter((t) => t.assigneeId === memberId && t.status === "done")
+    .length;
 }
 
 export interface LeaderRow {

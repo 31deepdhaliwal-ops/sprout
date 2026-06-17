@@ -23,9 +23,15 @@ npm run dev
 ```
 
 - `/` — landing
-- `/app` — your dashboard: today's tasks, points, streak, level, leaderboard peek
-- `/app/family` — the family leaderboard (week / all-time) + everyone's open tasks
+- `/app` — your dashboard: today's tasks, points, streak, level, **badges**, reminders, the parent **approval queue**, leaderboard peek
+- `/app/calendar` — the **schedule**: open tasks grouped by overdue / today / this week, with overdue flagged
+- `/app/family` — the family leaderboard (week / all-time), everyone's open tasks + earned badges
 - `/app/rewards` — the rewards shop, cash-out, and parent hand-over / pay-out queues
+
+**Earning loop:** a parent assigns a task (optionally "needs my approval"). The
+assignee checks it off → if approval is on it waits in the parent's **To approve**
+queue; once approved the points land, the streak ticks, and any new **badge**
+unlocks with a little celebration. Overdue and due-today work surfaces as reminders.
 
 Use the **profile switcher** (top-right) to view the app as any family member — it
 simulates "everyone on their own phone". Only **parents** can create/assign tasks and
@@ -37,7 +43,9 @@ manage rewards.
 |---|---|
 | Domain model (members, tasks, rewards, redemptions) | `lib/types.ts` |
 | Seed family + rewards + app config | `lib/config.ts` |
-| Points, levels, streaks, leaderboard, recurrence | `lib/scoring.ts` |
-| Live local store (swap for Convex) | `lib/store.tsx` |
-| The mascot, avatars, task rows, new-task modal | `components/` |
+| Points, levels, streaks, leaderboard, recurrence, due-date buckets | `lib/scoring.ts` |
+| Badges / achievements (defs + earned detection) | `lib/badges.ts` |
+| Live local store — tasks, **approval flow**, badge unlocks (swap for Convex) | `lib/store.tsx` |
+| The mascot, avatars, task rows, **badges + toast**, **reminders**, new-task modal | `components/` |
+| The schedule view | `app/app/calendar/page.tsx` |
 | Design tokens (OKLCH palette, fonts, grain) | `app/globals.css` |

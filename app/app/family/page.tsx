@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
+import { EarnedBadges } from "@/components/badges";
 import { ManageMembers } from "@/components/manage-members";
 import { TaskItem } from "@/components/task-item";
 import { Card } from "@/components/ui/card";
@@ -90,8 +91,8 @@ export default function Family() {
       {/* per-member boards */}
       <div className="grid gap-4 md:grid-cols-2">
         {members.map((m) => {
-          const todo = tasks.filter(
-            (t) => t.assigneeId === m.id && t.status === "todo",
+          const open = tasks.filter(
+            (t) => t.assigneeId === m.id && t.status !== "done",
           );
           return (
             <Card key={m.id} className="p-4">
@@ -102,13 +103,16 @@ export default function Family() {
                   Lvl {levelFor(m.lifetimePoints).level}
                 </span>
               </div>
+              {m.badges.length > 0 && (
+                <EarnedBadges member={m} className="mb-2 px-1" />
+              )}
               <div className="divide-y divide-border/60">
-                {todo.length === 0 ? (
+                {open.length === 0 ? (
                   <p className="px-3 py-5 text-center text-sm text-muted-foreground">
                     All clear 🎉
                   </p>
                 ) : (
-                  todo.map((t) => <TaskItem key={t.id} task={t} />)
+                  open.map((t) => <TaskItem key={t.id} task={t} />)
                 )}
               </div>
             </Card>
